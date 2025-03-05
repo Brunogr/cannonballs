@@ -30,6 +30,16 @@ window.addEventListener('load', init);
 window.addEventListener('mousemove', onMouseMove);
 window.addEventListener('click', shootBall);
 
+// Add touch event listeners
+window.addEventListener('touchstart', onTouchStart);
+window.addEventListener('touchmove', onTouchMove);
+window.addEventListener('touchend', onTouchEnd);
+
+// Track touch state
+let isTouching = false;
+let lastTouchX = 0;
+let lastTouchY = 0;
+
 function init() {
     // Create score display
     createScoreDisplay();
@@ -59,9 +69,11 @@ function createScoreDisplay() {
     scoreElement.style.top = '20px';
     scoreElement.style.left = '20px';
     scoreElement.style.color = 'white';
-    scoreElement.style.fontSize = '24px';
+    scoreElement.style.fontSize = 'clamp(18px, 6vw, 24px)';
     scoreElement.style.fontFamily = 'Arial, sans-serif';
     scoreElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
+    scoreElement.style.userSelect = 'none';
+    scoreElement.style.pointerEvents = 'none';
     scoreElement.textContent = `Score: ${score}`;
     document.body.appendChild(scoreElement);
     
@@ -358,9 +370,11 @@ function createStageDisplay() {
     stageElement.style.top = '60px';
     stageElement.style.left = '20px';
     stageElement.style.color = 'white';
-    stageElement.style.fontSize = '24px';
+    stageElement.style.fontSize = 'clamp(18px, 6vw, 24px)';
     stageElement.style.fontFamily = 'Arial, sans-serif';
     stageElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
+    stageElement.style.userSelect = 'none';
+    stageElement.style.pointerEvents = 'none';
     document.body.appendChild(stageElement);
     return stageElement;
 }
@@ -442,9 +456,14 @@ function createCannon() {
 function onMouseMove(event) {
     if (!cannonMesh) return;
     
+    updateCannonAim(event.clientX, event.clientY);
+}
+
+// Helper function to update cannon aim based on screen coordinates
+function updateCannonAim(x, y) {
     // Update the global mouse variable
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
     
     // Create ray from camera through mouse position
     const raycaster = new THREE.Raycaster();
@@ -632,54 +651,67 @@ function checkBoxesOffPlatform() {
         victoryElement.style.transform = 'translate(-50%, -50%)';
         victoryElement.style.color = 'white';
         victoryElement.style.fontFamily = 'Arial, sans-serif';
-        victoryElement.style.fontSize = '48px';
+        victoryElement.style.fontSize = 'clamp(32px, 8vw, 48px)';
         victoryElement.style.background = 'rgba(0,0,0,0.7)';
         victoryElement.style.padding = '20px';
         victoryElement.style.borderRadius = '10px';
         victoryElement.style.textAlign = 'center';
+        victoryElement.style.userSelect = 'none';
+        victoryElement.className = 'victory-message';
         victoryElement.innerHTML = `Stage ${currentStage} Complete!<br>Score: ${score}`;
         document.body.appendChild(victoryElement);
         
-        // Create continue button with hover effect
+        // Create continue button with hover and touch effects
         continueButton = document.createElement('button');
         continueButton.style.position = 'absolute';
         continueButton.style.top = '70%';
         continueButton.style.left = '50%';
         continueButton.style.transform = 'translate(-50%, -50%)';
         continueButton.style.color = 'white';
-        continueButton.style.fontSize = '24px';
+        continueButton.style.fontSize = 'clamp(16px, 5vw, 24px)';
         continueButton.style.backgroundColor = '#4CAF50';
-        continueButton.style.padding = '15px 30px';
+        continueButton.style.padding = 'clamp(10px, 3vw, 15px) clamp(20px, 6vw, 30px)';
         continueButton.style.border = 'none';
         continueButton.style.borderRadius = '5px';
         continueButton.style.cursor = 'pointer';
         continueButton.style.transition = 'background-color 0.3s ease';
+        continueButton.style.userSelect = 'none';
+        continueButton.style.touchAction = 'manipulation';
         continueButton.textContent = 'Continue to Stage ' + (currentStage + 1);
         
-        // Add hover effect
+        // Add hover and touch effects
         continueButton.addEventListener('mouseover', () => {
             continueButton.style.backgroundColor = '#45a049';
         });
         continueButton.addEventListener('mouseout', () => {
             continueButton.style.backgroundColor = '#4CAF50';
         });
+        continueButton.addEventListener('touchstart', () => {
+            continueButton.style.backgroundColor = '#45a049';
+        });
+        continueButton.addEventListener('touchend', () => {
+            continueButton.style.backgroundColor = '#4CAF50';
+        });
         
         document.body.appendChild(continueButton);
         
         // Add event listener to continue button
-        continueButton.addEventListener('click', () => {
-            // Reset the game
-            if (victoryElement) {
-                victoryElement.remove();
-                victoryElement = null;
-            }
-            if (continueButton) {
-                continueButton.remove();
-                continueButton = null;
-            }
-            resetGame();
-        });
+        continueButton.addEventListener('click', handleContinueClick);
+        continueButton.addEventListener('touchend', handleContinueClick);
     }
+}
+
+function handleContinueClick(event) {
+    event.preventDefault();
+    if (victoryElement) {
+        victoryElement.remove();
+        victoryElement = null;
+    }
+    if (continueButton) {
+        continueButton.remove();
+        continueButton = null;
+    }
+    resetGame();
 }
 
 // Remove the incorrect animate function wrapper and add a proper animation function
@@ -835,4 +867,42 @@ function resetGame() {
     
     // Update game state
     gameStarted = true;
+}
+
+function onTouchStart(event) {
+    event.preventDefault();
+    if (!cannonMesh) return;
+    
+    isTouching = true;
+    const touch = event.touches[0];
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
+    
+    // Update cannon aim immediately on touch start
+    updateCannonAim(touch.clientX, touch.clientY);
+}
+
+function onTouchMove(event) {
+    event.preventDefault();
+    if (!cannonMesh || !isTouching) return;
+    
+    const touch = event.touches[0];
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
+    
+    // Update cannon aim during touch move
+    updateCannonAim(touch.clientX, touch.clientY);
+}
+
+function onTouchEnd(event) {
+    event.preventDefault();
+    if (isTouching) {
+        isTouching = false;
+        // Only shoot if we haven't moved too far from the start position
+        const touch = event.changedTouches[0];
+        const moveDistance = Math.hypot(touch.clientX - lastTouchX, touch.clientY - lastTouchY);
+        if (moveDistance < 20) { // Only shoot if the touch hasn't moved too much
+            shootBall();
+        }
+    }
 }
