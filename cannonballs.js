@@ -1,7 +1,7 @@
 // Game variables
 let world, scene, camera, renderer, controls;
 let timeStep = 1/60;
-let cannonBody, cannonMesh;
+let cannonBody, cannonMesh;  // Changed from const to let
 let boxes = [], boxMeshes = [];
 let balls = [], ballMeshes = [];
 let platform;
@@ -499,74 +499,170 @@ function createCannon() {
     // Make the cannon smaller
     const scale = 0.6; // Scale factor to make the cannon smaller
     
-    // Cannon base (static)
-    const baseRadius = 1.5 * scale;
-    const baseHeight = 1 * scale;
-    const baseShape = new CANNON.Cylinder(baseRadius, baseRadius, baseHeight, 16);
-    const baseBody = new CANNON.Body({ mass: 0 });
-    // Position the cannon at the bottom center of the view
-    baseBody.position.set(0, -2, 0); // Centered horizontally, lower vertically
-    world.addBody(baseBody);
+    // Create a group to hold all cannon parts
+    const cannonGroup = new THREE.Group();
     
-    // Visual base
-    const baseGeometry = new THREE.CylinderGeometry(baseRadius, baseRadius * 1.2, baseHeight, 32);
-    const baseMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x333333,
-        roughness: 0.8,
-        metalness: 0.5
-    });
-    const baseMesh = new THREE.Mesh(baseGeometry, baseMaterial);
-    baseMesh.position.copy(baseBody.position);
-    baseMesh.castShadow = true;
-    baseMesh.receiveShadow = true;
-    scene.add(baseMesh);
-    
-    // Cannon barrel
+    // Cannon barrel dimensions
     const barrelLength = 3 * scale;
     const barrelBackRadius = 0.9 * scale;
     const barrelFrontRadius = 0.7 * scale;
-    const barrelShape = new CANNON.Cylinder(barrelBackRadius, barrelFrontRadius, barrelLength, 16);
-    cannonBody = new CANNON.Body({ mass: 0 });
-    // Adjust shape position so it points forward (negative Z is forward in our scene)
-    cannonBody.addShape(barrelShape, new CANNON.Vec3(0, 0, -barrelLength/2));
-    cannonBody.position.set(0, baseBody.position.y + (baseHeight + barrelBackRadius) * scale, baseBody.position.z);
-    world.addBody(cannonBody);
     
-    // Visual barrel (with more realistic cannon shape)
-    cannonMesh = new THREE.Group();
-    
-    // Main barrel - now tapered to look more like a cannon
+    // Create the main barrel with a more realistic shape
     const barrelGeometry = new THREE.CylinderGeometry(barrelFrontRadius, barrelBackRadius, barrelLength, 32);
     const barrelMaterial = new THREE.MeshStandardMaterial({ 
         color: 0x444444,
         roughness: 0.7,
         metalness: 0.6
     });
-    
     const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-    barrel.rotation.x = Math.PI/2; // Correct rotation for the cannon to point forward (negative Z)
-    barrel.position.z = -barrelLength/2; // Position barrel to extend forward
+    barrel.rotation.x = Math.PI/2;
+    barrel.position.z = -barrelLength/2;
     
-    // Add decorative rim around the back of the cannon
-    const rimGeometry = new THREE.TorusGeometry(barrelBackRadius * 1.1, barrelBackRadius * 0.2, 16, 32);
-    const rimMaterial = new THREE.MeshStandardMaterial({
-        color: 0x222222,
-        roughness: 0.6,
-        metalness: 0.7
+    // Add decorative rings around the barrel
+    const ringCount = 3;
+    for (let i = 0; i < ringCount; i++) {
+        const ringGeometry = new THREE.TorusGeometry(barrelBackRadius * 1.1, barrelBackRadius * 0.15, 16, 32);
+        const ringMaterial = new THREE.MeshStandardMaterial({
+            color: 0x333333,
+            roughness: 0.6,
+            metalness: 0.7
+        });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI/2;
+        ring.position.z = -barrelLength * (0.3 + i * 0.2);
+        barrel.add(ring);
+    }
+    
+    // Add trunnions (metal pins that allow the cannon to pivot)
+    const trunnionRadius = 0.3 * scale;
+    const trunnionLength = 1.2 * scale;
+    const trunnionGeometry = new THREE.CylinderGeometry(trunnionRadius, trunnionRadius, trunnionLength, 16);
+    const trunnionMaterial = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        roughness: 0.5,
+        metalness: 0.8
     });
     
-    const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-    rim.rotation.x = Math.PI/2;
-    rim.position.z = 0.1;
+    const leftTrunnion = new THREE.Mesh(trunnionGeometry, trunnionMaterial);
+    leftTrunnion.rotation.z = Math.PI/2;
+    leftTrunnion.position.set(-trunnionLength/2, 0, -barrelLength * 0.4);
+    barrel.add(leftTrunnion);
     
-    // Add them to the cannon group
-    cannonMesh.add(barrel);
-    cannonMesh.add(rim);
+    const rightTrunnion = new THREE.Mesh(trunnionGeometry, trunnionMaterial);
+    rightTrunnion.rotation.z = Math.PI/2;
+    rightTrunnion.position.set(trunnionLength/2, 0, -barrelLength * 0.4);
+    barrel.add(rightTrunnion);
     
-    cannonMesh.position.copy(cannonBody.position);
-    cannonMesh.castShadow = true;
-    cannonMesh.receiveShadow = true;
-    scene.add(cannonMesh);
+    // Create wooden carriage
+    const carriageGroup = new THREE.Group();
+    
+    // Main carriage body (wooden box)
+    const carriageWidth = 2 * scale;
+    const carriageHeight = 1.2 * scale;
+    const carriageDepth = 1.5 * scale;
+    const carriageGeometry = new THREE.BoxGeometry(carriageWidth, carriageHeight, carriageDepth);
+    const carriageMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8B4513, // Saddle brown for wood
+        roughness: 0.9,
+        metalness: 0.1
+    });
+    const carriage = new THREE.Mesh(carriageGeometry, carriageMaterial);
+    carriage.position.y = -carriageHeight/2;
+    
+    // Add wooden wheels
+    const wheelRadius = 0.4 * scale;
+    const wheelThickness = 0.2 * scale;
+    const wheelGeometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelThickness, 16);
+    const wheelMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8B4513,
+        roughness: 0.9,
+        metalness: 0.1
+    });
+    
+    const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    leftWheel.rotation.z = Math.PI/2;
+    leftWheel.position.set(-carriageWidth/2, -carriageHeight/2, 0);
+    carriageGroup.add(leftWheel);
+    
+    const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    rightWheel.rotation.z = Math.PI/2;
+    rightWheel.position.set(carriageWidth/2, -carriageHeight/2, 0);
+    carriageGroup.add(rightWheel);
+    
+    // Add metal wheel rims
+    const rimGeometry = new THREE.TorusGeometry(wheelRadius, wheelRadius * 0.1, 8, 16);
+    const rimMaterial = new THREE.MeshStandardMaterial({
+        color: 0x444444,
+        roughness: 0.7,
+        metalness: 0.6
+    });
+    
+    const leftRim = new THREE.Mesh(rimGeometry, rimMaterial);
+    leftRim.rotation.z = Math.PI/2;
+    leftRim.position.copy(leftWheel.position);
+    carriageGroup.add(leftRim);
+    
+    const rightRim = new THREE.Mesh(rimGeometry, rimMaterial);
+    rightRim.rotation.z = Math.PI/2;
+    rightRim.position.copy(rightWheel.position);
+    carriageGroup.add(rightRim);
+    
+    // Add wooden supports for the barrel
+    const supportGeometry = new THREE.BoxGeometry(0.3 * scale, 0.8 * scale, 0.3 * scale);
+    const supportMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8B4513,
+        roughness: 0.9,
+        metalness: 0.1
+    });
+    
+    const leftSupport = new THREE.Mesh(supportGeometry, supportMaterial);
+    leftSupport.position.set(-carriageWidth/3, 0, 0);
+    carriageGroup.add(leftSupport);
+    
+    const rightSupport = new THREE.Mesh(supportGeometry, supportMaterial);
+    rightSupport.position.set(carriageWidth/3, 0, 0);
+    carriageGroup.add(rightSupport);
+    
+    // Add the carriage to the group
+    carriageGroup.add(carriage);
+    
+    // Add all parts to the main group
+    cannonGroup.add(barrel);
+    cannonGroup.add(carriageGroup);
+    
+    // Position the entire cannon
+    cannonGroup.position.set(0, -2, 0);
+    
+    // Add shadows
+    cannonGroup.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+            object.castShadow = true;
+            object.receiveShadow = true;
+        }
+    });
+    
+    // Add to scene
+    scene.add(cannonGroup);
+    
+    // Create physics body for the cannon
+    cannonBody = new CANNON.Body({ mass: 0 });
+    
+    // Add barrel shape
+    const barrelShape = new CANNON.Cylinder(barrelBackRadius, barrelFrontRadius, barrelLength, 16);
+    cannonBody.addShape(barrelShape, new CANNON.Vec3(0, 0, -barrelLength/2));
+    
+    // Add carriage shape
+    const carriageShape = new CANNON.Box(new CANNON.Vec3(carriageWidth/2, carriageHeight/2, carriageDepth/2));
+    cannonBody.addShape(carriageShape, new CANNON.Vec3(0, -carriageHeight/2, 0));
+    
+    // Position the physics body
+    cannonBody.position.copy(cannonGroup.position);
+    
+    // Add to physics world
+    world.addBody(cannonBody);
+    
+    // Store reference for later use
+    cannonMesh = cannonGroup;
 }
 
 function onMouseMove(event) {

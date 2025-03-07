@@ -2,7 +2,12 @@
 <html>
 <head>
     <title>Cannon Game</title>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="A 3D cannon game where you destroy targets with cannonballs">
+    <meta name="theme-color" content="#87CEEB">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <style>
         * {
             -webkit-tap-highlight-color: transparent;
@@ -16,6 +21,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            background-color: #87CEEB;
         }
         
         canvas { 
@@ -35,6 +41,20 @@
             border-radius: 5px;
             pointer-events: none;
             z-index: 1000;
+        }
+
+        #offline-message {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            z-index: 1001;
         }
         
         button {
@@ -58,13 +78,115 @@
                 font-size: clamp(32px, 8vw, 48px) !important;
             }
         }
+
+        /* Add splash screen styles */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #87CEEB;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        #splash-screen img {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 20px;
+        }
+
+        #splash-screen h1 {
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            width: 0%;
+            height: 100%;
+            background-color: white;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
     </style>
 </head>
 <body>
+    <div id="splash-screen">
+        <img src="icons/icon-192x192.png" alt="Cannon Game">
+        <h1>Cannon Game</h1>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
     <div id="info">Tap to shoot! Use touch to aim</div>
+    <div id="offline-message">You are currently offline</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // Handle online/offline status
+        window.addEventListener('online', handleNetworkChange);
+        window.addEventListener('offline', handleNetworkChange);
+
+        function handleNetworkChange() {
+            const offlineMessage = document.getElementById('offline-message');
+            if (!navigator.onLine) {
+                offlineMessage.style.display = 'block';
+            } else {
+                offlineMessage.style.display = 'none';
+            }
+        }
+
+        // Handle splash screen
+        window.addEventListener('load', () => {
+            const splashScreen = document.getElementById('splash-screen');
+            const loadingProgress = document.querySelector('.loading-progress');
+            let progress = 0;
+
+            const interval = setInterval(() => {
+                progress += 5;
+                loadingProgress.style.width = `${progress}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        splashScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            splashScreen.style.display = 'none';
+                        }, 500);
+                    }, 500);
+                }
+            }, 50);
+        });
+    </script>
     <script src="cannonballs.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/gh/brunogr/cannonballs/cannonballs.js"></script> -->
 </body>
 </html> 
