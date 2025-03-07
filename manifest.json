@@ -9,7 +9,7 @@
     "display_override": ["window-controls-overlay", "fullscreen", "standalone"],
     "background_color": "#87CEEB",
     "theme_color": "#87CEEB",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "categories": ["games"],
     "launch_handler": {
         "client_mode": ["focus-existing", "auto"]
