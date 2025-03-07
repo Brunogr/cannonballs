@@ -6,21 +6,21 @@ const getBaseUrl = () => {
 };
 
 const ASSETS_TO_CACHE = [
-    './',
-    './index.html',
-    './cannonballs.js',
-    './manifest.json',
+    '.',
+    'index.html',
+    'cannonballs.js',
+    'manifest.json',
     'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js',
     'https://threejs.org/examples/textures/hardwood2_diffuse.jpg',
-    './icons/icon-72x72.png',
-    './icons/icon-96x96.png',
-    './icons/icon-128x128.png',
-    './icons/icon-144x144.png',
-    './icons/icon-152x152.png',
-    './icons/icon-192x192.png',
-    './icons/icon-384x384.png',
-    './icons/icon-512x512.png'
+    'icons/icon-72x72.png',
+    'icons/icon-96x96.png',
+    'icons/icon-128x128.png',
+    'icons/icon-144x144.png',
+    'icons/icon-152x152.png',
+    'icons/icon-192x192.png',
+    'icons/icon-384x384.png',
+    'icons/icon-512x512.png'
 ];
 
 // Install event - cache assets
@@ -31,10 +31,12 @@ self.addEventListener('install', (event) => {
                 // Add base URL to relative paths
                 const baseUrl = getBaseUrl();
                 const assetsWithBaseUrl = ASSETS_TO_CACHE.map(path => {
-                    if (path.startsWith('./')) {
-                        return baseUrl + path.slice(1);
+                    // Skip URLs that are already absolute
+                    if (path.startsWith('http')) {
+                        return path;
                     }
-                    return path;
+                    // Join base URL with asset path
+                    return baseUrl + '/' + path;
                 });
                 return cache.addAll(assetsWithBaseUrl);
             })
@@ -97,7 +99,7 @@ self.addEventListener('fetch', (event) => {
                     .catch(() => {
                         // If fetch fails, return a fallback response for navigation requests
                         if (event.request.mode === 'navigate') {
-                            return caches.match('./index.html');
+                            return caches.match('index.html');
                         }
                         return null;
                     });
