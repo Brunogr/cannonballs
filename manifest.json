@@ -4,10 +4,15 @@
     "description": "A 3D cannon game where you destroy targets with cannonballs",
     "start_url": "/cannonballs/",
     "scope": "/cannonballs/",
-    "display": "fullscreen",
+    "display": "standalone",
+    "display_override": ["fullscreen", "standalone"],
     "background_color": "#87CEEB",
     "theme_color": "#87CEEB",
     "orientation": "landscape",
+    "categories": ["games"],
+    "launch_handler": {
+        "client_mode": ["focus-existing", "auto"]
+    },
     "icons": [
         {
             "src": "/cannonballs/icons/icon-72x72.png",
