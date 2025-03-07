@@ -6,8 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="A 3D cannon game where you destroy targets with cannonballs">
     <meta name="theme-color" content="#87CEEB">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cannon Game">
+    <link rel="manifest" href="/cannonballs/manifest.json">
+    <link rel="apple-touch-icon" href="/cannonballs/icons/icon-192x192.png">
     <style>
         * {
             -webkit-tap-highlight-color: transparent;
@@ -128,7 +132,7 @@
 </head>
 <body>
     <div id="splash-screen">
-        <img src="icons/icon-192x192.png" alt="Cannon Game">
+        <img src="/cannonballs/icons/icon-192x192.png" alt="Cannon Game">
         <h1>Cannon Game</h1>
         <div class="loading-bar">
             <div class="loading-progress"></div>
@@ -142,17 +146,15 @@
         // Register service worker with scope awareness
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Get the base URL for the current page
-                const baseUrl = window.location.pathname.replace(/\/[^/]*$/, '');
-                const swUrl = baseUrl + '/sw.js';
-                
-                navigator.serviceWorker.register(swUrl)
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    })
-                    .catch(err => {
-                        console.log('ServiceWorker registration failed: ', err);
-                    });
+                navigator.serviceWorker.register('/cannonballs/sw.js', {
+                    scope: '/cannonballs/'
+                })
+                .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
             });
         }
 
@@ -189,8 +191,15 @@
                     }, 500);
                 }
             }, 50);
+
+            // Request fullscreen on iOS
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+            }
         });
     </script>
-    <script src="cannonballs.js"></script>
+    <script src="/cannonballs/cannonballs.js"></script>
 </body>
 </html> 
